@@ -1,0 +1,168 @@
+---
+title: "What Drives Red Wine Quality? An Analysis of Alcohol, Acidity, and Chemical Properties"
+author: "Bryson Laney"
+format:
+  html:
+    theme: cosmo
+    toc: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Introduction and Research Question
+
+Wine quality is influenced by a complex interaction of chemical and sensory attributes. Understanding which measurable properties most strongly relate to perceived quality can help winemakers improve production decisions and help consumers better interpret wine characteristics.
+
+**Primary Research Question:**  
+Which physicochemical properties are most strongly associated with higher-quality red wine, and how do alcohol content and acidity relate to quality ratings?
+
+To answer this question, we analyze the well-known UCI Red Wine Quality dataset using data wrangling, visualization, and interpretation techniques learned this semester.
+
+## Data Source
+
+The dataset comes from the UCI Machine Learning Repository and contains 1,599 observations of Portuguese red wines. Each observation includes 11 physicochemical measurements and a sensory quality score assigned by wine experts.
+
+We load the dataset directly from a remote source.
+
+```{r}
+# Load required libraries
+library(tidyverse)
+
+# Import data from remote source
+wine <- read_csv(
+  "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv",
+  show_col_types = FALSE
+)
+```
+
+## Data Wrangling
+
+### Basic Wrangling
+
+We first inspect and clean the data by selecting relevant variables and creating a binary quality label. Wines with a quality score of 7 or higher are labeled as **Good**, while others are labeled as **Not Good**.
+
+```{r}
+wine_clean <- wine |> 
+  select(alcohol, fixed.acidity, volatile.acidity, sulphates, density, pH, quality) |> 
+  mutate(
+    quality_label = if_else(quality >= 7, "Good", "Not Good")
+  )
+```
+
+### Grouped Wrangling
+
+We summarize average chemical properties by quality label to compare higher- and lower-quality wines.
+
+```{r}
+wine_summary <- wine_clean |> 
+  group_by(quality_label) |> 
+  summarize(
+    avg_alcohol = mean(alcohol),
+    avg_fixed_acidity = mean(fixed.acidity),
+    avg_volatile_acidity = mean(volatile.acidity),
+    avg_sulphates = mean(sulphates),
+    n = n(),
+    .groups = "drop"
+  )
+
+wine_summary
+```
+
+### Reformatting for Visualization
+
+To visualize multiple chemical attributes together, we pivot the summarized data into long format.
+
+```{r}
+wine_long <- wine_summary |> 
+  select(-n) |> 
+  pivot_longer(
+    cols = starts_with("avg"),
+    names_to = "metric",
+    values_to = "value"
+  )
+```
+
+## Visualization
+
+### Chart 1: Alcohol Content by Wine Quality
+
+Alcohol content is often cited as a key driver of wine quality. This boxplot compares alcohol levels between higher- and lower-quality wines.
+
+```{r}
+ggplot(wine_clean, aes(x = quality_label, y = alcohol, fill = quality_label)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(
+    title = "Alcohol Content by Wine Quality",
+    x = "Wine Quality",
+    y = "Alcohol (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold")
+  )
+```
+
+**Interpretation:**  
+Higher-quality wines tend to have noticeably higher alcohol content. This suggests that alcohol percentage is a strong indicator of perceived quality in this dataset.
+
+### Chart 2: Average Chemical Properties by Quality Group
+
+This bar chart compares average chemical properties between quality groups.
+
+```{r}
+ggplot(wine_long, aes(x = metric, y = value, fill = quality_label)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Average Chemical Properties by Wine Quality",
+    x = "Chemical Metric",
+    y = "Average Value",
+    fill = "Quality"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+```
+
+**Interpretation:**  
+Good-quality wines tend to have lower volatile acidity and higher sulphate levels. Volatile acidity is often associated with unpleasant sourness, so lower values align with better taste perceptions.
+
+### Chart 3: Alcohol vs Volatile Acidity
+
+This scatterplot examines the relationship between alcohol and volatile acidity, colored by quality label.
+
+```{r}
+ggplot(wine_clean, aes(x = alcohol, y = volatile.acidity, color = quality_label)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Alcohol vs Volatile Acidity",
+    x = "Alcohol (%)",
+    y = "Volatile Acidity",
+    color = "Quality"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold")
+  )
+```
+
+**Interpretation:**  
+Higher-quality wines cluster around higher alcohol levels and lower volatile acidity, reinforcing the importance of these two variables in predicting wine quality.
+
+## Discussion and Conclusions
+
+This analysis demonstrates that alcohol content is the strongest single indicator of red wine quality in this dataset, followed by sulphates and volatile acidity. Wines rated as higher quality generally have higher alcohol percentages and lower volatile acidity, which aligns with established enological principles.
+
+These insights could inform winemaking decisions such as fermentation control and grape selection. However, this analysis is limited by the subjective nature of quality ratings and the absence of sensory attributes such as aroma or mouthfeel.
+
+Future work could incorporate white wine data, explore nonlinear relationships, or apply predictive modeling techniques to further understand wine quality drivers.
+
+## References
+
+UCI Machine Learning Repository: Wine Quality Dataset  
+https://archive.ics.uci.edu/ml/datasets/Wine+Quality
