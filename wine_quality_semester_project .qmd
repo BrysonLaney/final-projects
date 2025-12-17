@@ -1,11 +1,12 @@
 title: "What Drives Red Wine Quality? An Analysis of Alcohol, Acidity, and Chemical Properties"
 author: "Bryson Laney"
-format:
-  md: default
 execute:
-  echo: true
+  keep-md: true
   warning: false
-  message: false
+format:
+  html:
+    code-fold: true
+    code-tools: true
 ---
 
 ## Introduction and Research Question
